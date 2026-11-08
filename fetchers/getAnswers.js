@@ -59,11 +59,11 @@ const getAnswers = async (slug, lang) => {
       name: topicObj.name,
       url: quetrefy(topicObj.url),
     })),
-    relatedQuestions: rawData.related.map(questionObj => ({
+    relatedQuestions: rawData.related?.map(questionObj => ({
       qid: questionObj.qid,
       url: quetrefy(questionObj.url),
       text: JSON.parse(questionObj.title).sections,
-    })),
+    })) ?? [],
   };
 
   return data;
