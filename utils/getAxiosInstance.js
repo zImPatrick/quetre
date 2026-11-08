@@ -4,8 +4,12 @@
 import axios from 'axios';
 import settle from 'axios/unsafe/core/settle.js';
 import initCycleTLS from 'cycletls';
+import { Cookie } from 'tough-cookie';
+import { CookieJar } from 'tough-cookie';
 
 const cycleTLS = await initCycleTLS();
+const jar = new CookieJar();
+const extraHeaders = process.env.EXTRA_HEADERS ? JSON.parse(process.env.EXTRA_HEADERS) : null;
 
 ////////////////////////////////////////////////////////
 //                     FUNCTION
@@ -26,6 +30,7 @@ const getAxiosInstance = (subdomain = 'www') =>
       ...(process.env.ACCEPT && {
         Accept: process.env.ACCEPT,
       }),
+      ...extraHeaders,
     },
     adapter: axiosCycleTlsAdapter,
   });
@@ -37,6 +42,10 @@ const getAxiosInstance = (subdomain = 'www') =>
 const axiosCycleTlsAdapter = (config) => {
   return new Promise(async (res, rej) => {
     const uri = new URL(config.url, config.baseURL);
+
+    const cookieString = await jar.getCookieString(uri);
+    if (cookieString) config.headers["Cookie"] = cookieString;
+    
     const cycleResponse = await cycleTLS(uri, {
       body: config.data,
       headers: config.headers,
@@ -49,6 +58,17 @@ const axiosCycleTlsAdapter = (config) => {
       forceHTTP3: process.env.CYCLETLS_FORCE_HTTP3 === '1',
       proxy: process.env.HTTP_PROXY,
     }, config.method);
+
+    if (cycleResponse.status == 403) {
+      // probably a cloudflare block, lets just clear
+      // our cookies
+      await jar.removeAllCookies();
+    } else if (cycleResponse.headers["Set-Cookie"]) {
+      for (const cookie of cycleResponse.headers["Set-Cookie"]) {
+        const parsedCookie = Cookie.parse(cookie);
+        await jar.setCookie(parsedCookie, uri);
+      }
+    }
 
     const resp = {
       data: null,
