@@ -110,7 +110,7 @@ const KEYWORD = 'user';
 
 const getProfile = async (slug, lang) => {
   // getting data and destructuring it in case it exists
-  const res = await fetcher(`profile/${slug}`, { keyword: KEYWORD, lang });
+  const res = await fetcher(`profile/${encodeURIComponent(slug)}`, { keyword: KEYWORD, lang, toEncode: false });
 
   const {
     data: { [KEYWORD]: rawData },

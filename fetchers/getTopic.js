@@ -13,7 +13,7 @@ const KEYWORD = 'topic';
 
 const getTopic = async (slug, lang) => {
   // getting data and destructuring it in case it exists, else throwing an error
-  const res = await fetcher(`topic/${slug}`, { keyword: KEYWORD, lang });
+  const res = await fetcher(`topic/${encodeURIComponent(slug)}`, { keyword: KEYWORD, lang, toEncode: false });
 
   const {
     data: { [KEYWORD]: rawData },
